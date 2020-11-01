@@ -75,10 +75,10 @@ def print_result(
     vars: List[str] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
-    columns_settings=dict(),
-    padding=None,
-    expand=False,
-    equal=True,
+    columns_settings: dict = dict(),
+    padding: PaddingDimensions = None,
+    expand: bool = False,
+    equal: bool = True,
 ) -> None:
     """
     Prints an object of type `nornir.core.task.Result`
