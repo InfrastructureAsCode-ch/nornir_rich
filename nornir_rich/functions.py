@@ -58,7 +58,7 @@ class RichHelper:
           rich.panel.Panel
         """
         mulit_results = [
-            self._print_multi_result(result=mulit_result, host=host)
+            self.print_multi_result(result=mulit_result, host=host)
             for host, mulit_result in result.items()
         ]
         columns = Columns(mulit_results, **self.columns_settings)
@@ -79,7 +79,7 @@ class RichHelper:
           rich.panel.Panel
         """
         results = [
-            self._print_result(r)
+            self.print_result(r)
             for r in result
             if r.severity_level >= self.severity_level
         ]
@@ -154,5 +154,46 @@ def print_result(
             print(rh.print_multi_result(result))
         elif isinstance(result, Result):
             print(rh.print_result(result))
+    finally:
+        LOCK.release()
+
+
+def print_failed_hosts(
+    result: AggregatedResult,
+    vars: List[str] = None,
+    failed: bool = False,
+    severity_level: int = logging.INFO,
+    columns_settings: dict = dict(),
+    padding: PaddingDimensions = None,
+    expand: bool = False,
+    equal: bool = True,
+) -> None:
+    """
+    Prints results of all failed hosts from `nornir.core.task.AggregatedResult`
+
+    Arguments:
+      result: from a previous task
+      vars: Which attributes you want to print
+      failed: if ``True`` assume the task failed
+      severity_level: Print only errors with this severity level or higher
+      columns_settings: Settings passed to `rich.columns.Columns` object
+      padding: Optional padding around cells. Defaults to (0, 1).
+      expand: Expand columns to full width. Defaults to False.
+      equal: Equal sized columns. Defaults to False
+    """
+    LOCK.acquire()
+    equal = False if expand else equal
+    rh = RichHelper(
+        columns_settings=columns_settings,
+        padding=padding,
+        expand=expand,
+        equal=equal,
+        vars=vars,
+        severity_level=severity_level,
+        failed=failed,
+    )
+    try:
+        for host, multi_result in result.failed_hosts.items():
+            print(rh.print_multi_result(multi_result, host))
     finally:
         LOCK.release()

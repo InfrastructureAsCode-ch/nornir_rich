@@ -1,7 +1,7 @@
 import logging
 from nornir import InitNornir
 from nornir.core.task import Task, Result
-from nornir_rich.functions import print_result
+from nornir_rich.functions import print_result, print_failed_hosts
 
 from random import randrange
 
@@ -81,3 +81,4 @@ results = nr.run(
 
 print_result(results)
 print_result(results, vars=["diff", "result", "name", "exception", "severity_level"])
+print_failed_hosts(results)
