@@ -1,6 +1,8 @@
 import logging
 import threading
-from typing import List, Union
+from typing import Iterable, List, Union
+from nornir.core import Nornir, inventory
+from nornir.core.inventory import Inventory
 
 from nornir.core.task import AggregatedResult, MultiResult, Result
 
@@ -109,7 +111,15 @@ class RichHelper:
                 style="red" if result.failed else "green",
             )
         return Panel(
-            result.result, title=result.name, style="red" if result.failed else "green",
+            result.result,
+            title=result.name,
+            style="red" if result.failed else "green",
+        )
+
+    def print_scopes(self, scopes: Iterable[dict]):
+        return Columns(
+            [render_scope(map, title=name) for name, map in scopes.items()],
+            **self.columns_settings,
         )
 
 
@@ -195,5 +205,48 @@ def print_failed_hosts(
     try:
         for host, multi_result in result.failed_hosts.items():
             print(rh.print_multi_result(multi_result, host))
+    finally:
+        LOCK.release()
+
+
+def print_inventory(
+    inventory: Union[Inventory, Nornir],
+    vars: List[str] = None,
+    failed: bool = False,
+    severity_level: int = logging.INFO,
+    columns_settings: dict = dict(),
+    padding: PaddingDimensions = None,
+    expand: bool = False,
+    equal: bool = True,
+) -> None:
+    """
+    Prints results of all failed hosts from `nornir.core.task.AggregatedResult`
+
+    Arguments:
+      result: from a previous task
+      vars: Which attributes you want to print
+      failed: if ``True`` assume the task failed
+      severity_level: Print only errors with this severity level or higher
+      columns_settings: Settings passed to `rich.columns.Columns` object
+      padding: Optional padding around cells. Defaults to (0, 1).
+      expand: Expand columns to full width. Defaults to False.
+      equal: Equal sized columns. Defaults to False
+    """
+
+    if isinstance(inventory, Nornir):
+        inventory = inventory.inventory
+    LOCK.acquire()
+    equal = False if expand else equal
+    rh = RichHelper(
+        columns_settings=columns_settings,
+        padding=padding,
+        expand=expand,
+        equal=equal,
+        vars=vars,
+        severity_level=severity_level,
+        failed=failed,
+    )
+    try:
+        print(rh.print_scopes(inventory.hosts))
     finally:
         LOCK.release()
