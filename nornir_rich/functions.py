@@ -14,7 +14,7 @@ from rich.padding import PaddingDimensions
 LOCK = threading.Lock()
 
 
-class PrintHelper:
+class RichHelper:
     def __init__(
         self,
         columns_settings: dict = dict(),
@@ -34,7 +34,7 @@ class PrintHelper:
         self.severity_level = severity_level
         self.failed = failed
 
-    def _print_aggregated_result(self, result: AggregatedResult) -> Panel:
+    def print_aggregated_result(self, result: AggregatedResult) -> Panel:
         mulit_results = [
             self._print_multi_result(result=mulit_result, host=host)
             for host, mulit_result in result.items()
@@ -45,7 +45,7 @@ class PrintHelper:
         )
         return panel
 
-    def _print_multi_result(self, result: MultiResult, host: str) -> Panel:
+    def print_multi_result(self, result: MultiResult, host: str) -> Panel:
         results = [self._print_result(r) for r in result if r.severity_level >= self.severity_level]
         panel = Panel(
             Columns(results, **self.columns_settings),
@@ -54,7 +54,7 @@ class PrintHelper:
         )
         return panel
 
-    def _print_result(self, result: Result) -> Panel:
+    def print_result(self, result: Result) -> Panel:
         if result.severity_level < self.severity_level:
             return None
         if self.vars:
@@ -91,7 +91,7 @@ def print_result(
     """
     LOCK.acquire()
     equal = False if expand else equal
-    ph = PrintHelper(
+    rh = RichHelper(
         columns_settings=columns_settings,
         padding=padding,
         expand=expand,
@@ -102,10 +102,10 @@ def print_result(
     )
     try:
         if isinstance(result, AggregatedResult):
-            print(ph._print_aggregated_result(result))
+            print(rh.print_aggregated_result(result))
         elif isinstance(result, MultiResult):
-            print(ph._print_multi_result(result))
+            print(rh.print_multi_result(result))
         elif isinstance(result, Result):
-            print(ph._print_result(result))
+            print(rh.print_result(result))
     finally:
         LOCK.release()
