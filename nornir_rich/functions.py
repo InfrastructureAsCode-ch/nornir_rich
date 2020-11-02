@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import List, cast
+from typing import List, Union
 
 from nornir.core.task import AggregatedResult, MultiResult, Result
 
@@ -15,6 +15,19 @@ LOCK = threading.Lock()
 
 
 class RichHelper:
+    """
+    Helper object for rendering rich columns and panels
+
+    Arguments:
+      columns_settings: Settings passed to `rich.columns.Columns` object
+      padding: Optional padding around cells. Defaults to (0, 1).
+      expand: Expand columns to full width. Defaults to False.
+      equal: Equal sized columns. Defaults to False
+      vars: Which attributes you want to print
+      severity_level: Print only errors with this severity level or higher
+      failed: if ``True`` assume the task failed
+    """
+
     def __init__(
         self,
         columns_settings: dict = dict(),
@@ -35,6 +48,15 @@ class RichHelper:
         self.failed = failed
 
     def print_aggregated_result(self, result: AggregatedResult) -> Panel:
+        """
+        Render all task results per each host in AggregatedResult
+
+        Arguments:
+          result: AggregatedResult to render
+
+        Return:
+          rich.panel.Panel
+        """
         mulit_results = [
             self._print_multi_result(result=mulit_result, host=host)
             for host, mulit_result in result.items()
@@ -46,7 +68,21 @@ class RichHelper:
         return panel
 
     def print_multi_result(self, result: MultiResult, host: str) -> Panel:
-        results = [self._print_result(r) for r in result if r.severity_level >= self.severity_level]
+        """
+        Render all task results in a MultiResult
+
+        Arguments:
+          result: MultiResult to render
+          host: Hostname
+
+        Return:
+          rich.panel.Panel
+        """
+        results = [
+            self._print_result(r)
+            for r in result
+            if r.severity_level >= self.severity_level
+        ]
         panel = Panel(
             Columns(results, **self.columns_settings),
             title=f"{host} | {result.name}",
@@ -55,6 +91,15 @@ class RichHelper:
         return panel
 
     def print_result(self, result: Result) -> Panel:
+        """
+        Render individual task result
+
+        Arguments:
+          result: Individual result to render
+
+        Return:
+          rich.panel.Panel
+        """
         if result.severity_level < self.severity_level:
             return None
         if self.vars:
@@ -64,14 +109,12 @@ class RichHelper:
                 style="red" if result.failed else "green",
             )
         return Panel(
-            result.result,
-            title=result.name,
-            style="red" if result.failed else "green",
+            result.result, title=result.name, style="red" if result.failed else "green",
         )
 
 
 def print_result(
-    result: Result,
+    result: Union[Result, MultiResult, AggregatedResult],
     vars: List[str] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
@@ -81,13 +124,17 @@ def print_result(
     equal: bool = True,
 ) -> None:
     """
-    Prints an object of type `nornir.core.task.Result`
+    Prints an object of type `nornir.core.task.Result` || `nornir.core.task.MultiResult` || `nornir.core.task.AggregatedResult`
 
     Arguments:
       result: from a previous task
       vars: Which attributes you want to print
       failed: if ``True`` assume the task failed
       severity_level: Print only errors with this severity level or higher
+      columns_settings: Settings passed to `rich.columns.Columns` object
+      padding: Optional padding around cells. Defaults to (0, 1).
+      expand: Expand columns to full width. Defaults to False.
+      equal: Equal sized columns. Defaults to False
     """
     LOCK.acquire()
     equal = False if expand else equal
