@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-nornir = "^3.0.0"
+nornir = "^3"
 rich = "^9.1.0"
 
 [tool.poetry.dev-dependencies]
