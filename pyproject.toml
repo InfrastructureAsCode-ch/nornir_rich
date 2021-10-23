@@ -7,11 +7,11 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.6"
-nornir = "^3.0.0"
+nornir = "^3"
 rich = "^9.1.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^6.2"
 black = "^20.8b1"
 
 [build-system]
