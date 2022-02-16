@@ -16,8 +16,8 @@ nr = InitNornir(
     inventory={
         "plugin": "SimpleInventory",
         "options": {
-            "host_file": "demo_inventory/hosts.yaml",
-            "group_file": "demo_inventory/groups.yaml",
+            "host_file": "tests/demo_inventory/hosts.yaml",
+            "group_file": "tests/demo_inventory/groups.yaml",
         },
     },
 )
