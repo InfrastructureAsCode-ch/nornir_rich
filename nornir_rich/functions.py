@@ -119,7 +119,12 @@ class RichHelper:
 
     def print_scopes(self, scopes: Dict[str, Any]) -> Columns:
         if self.vars:
-            columns = [render_scope({k: v for k, v in map.items() if k in self.vars}, title=name) for name, map in scopes.items()]
+            columns = [
+                render_scope(
+                    {k: v for k, v in map.items() if k in self.vars}, title=name
+                )
+                for name, map in scopes.items()
+            ]
         else:
             columns = [render_scope(map, title=name) for name, map in scopes.items()]
         return Columns(
