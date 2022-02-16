@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Iterable, List, Union
+from typing import Any, Iterable, List, Optional, Union, Dict
 from nornir.core import Nornir, inventory
 from nornir.core.inventory import Inventory
 
@@ -32,12 +32,12 @@ class RichHelper:
 
     def __init__(
         self,
-        columns_settings: dict = dict(),
+        columns_settings: Dict[str, Any] = dict(),
         padding: PaddingDimensions = None,
         expand: bool = False,
         equal: bool = True,
         vars: List[str] = None,
-        severity_level: int = None,
+        severity_level: int = 0,
         failed: bool = None,
     ) -> None:
         self.columns_settings = columns_settings
@@ -69,7 +69,7 @@ class RichHelper:
         )
         return panel
 
-    def print_multi_result(self, result: MultiResult, host: str) -> Panel:
+    def print_multi_result(self, result: MultiResult, host: str = "HOST") -> Panel:
         """
         Render all task results in a MultiResult
 
@@ -80,19 +80,20 @@ class RichHelper:
         Return:
           rich.panel.Panel
         """
-        results = [
+        results: List[Union[Panel, None]] = [
             self.print_result(r)
             for r in result
             if r.severity_level >= self.severity_level
         ]
+        columns = [p for p in results if p is not None] or None
         panel = Panel(
-            Columns(results, **self.columns_settings),
+            Columns(columns, **self.columns_settings),
             title=f"{host} | {result.name}",
             style="red" if result.failed else "green",
         )
         return panel
 
-    def print_result(self, result: Result) -> Panel:
+    def print_result(self, result: Result) -> Union[Panel, None]:
         """
         Render individual task result
 
@@ -111,12 +112,12 @@ class RichHelper:
                 style="red" if result.failed else "green",
             )
         return Panel(
-            result.result,
+            result.result if result.result is not None else "",
             title=result.name,
             style="red" if result.failed else "green",
         )
 
-    def print_scopes(self, scopes: Iterable[dict]):
+    def print_scopes(self, scopes: Dict[str, Any]) -> Columns:
         return Columns(
             [render_scope(map, title=name) for name, map in scopes.items()],
             **self.columns_settings,
@@ -128,7 +129,7 @@ def print_result(
     vars: List[str] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
-    columns_settings: dict = dict(),
+    columns_settings: Dict[str, Any] = dict(),
     padding: PaddingDimensions = None,
     expand: bool = False,
     equal: bool = True,
@@ -173,7 +174,7 @@ def print_failed_hosts(
     vars: List[str] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
-    columns_settings: dict = dict(),
+    columns_settings: Dict[str, Any] = dict(),
     padding: PaddingDimensions = None,
     expand: bool = False,
     equal: bool = True,
@@ -214,7 +215,7 @@ def print_inventory(
     vars: List[str] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
-    columns_settings: dict = dict(),
+    columns_settings: Dict[str, Any] = dict(),
     padding: PaddingDimensions = None,
     expand: bool = False,
     equal: bool = True,
