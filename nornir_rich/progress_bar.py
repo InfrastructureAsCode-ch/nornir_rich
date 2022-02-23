@@ -11,6 +11,7 @@ from rich.progress import (
     Live,
 )
 from rich.panel import Panel
+from rich.protocol import rich_cast
 
 
 class RichProgressBar:

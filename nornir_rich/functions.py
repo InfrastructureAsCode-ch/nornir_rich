@@ -81,7 +81,7 @@ class RichHelper:
           rich.panel.Panel
         """
         results: List[Union[Panel, None]] = [
-            self.print_result(r)
+            self.print_dispatch(r)
             for r in result
             if r.severity_level >= self.severity_level
         ]
@@ -131,6 +131,26 @@ class RichHelper:
             columns,
             **self.columns_settings,
         )
+
+    def print_dispatch(
+        self, result: Union[Result, MultiResult, AggregatedResult]
+    ) -> Union[Panel, None]:
+        """
+        Dispatch print function
+
+        Arguments:
+          result: Individual Result, MultiResult or AggregatedResult to render
+
+        Return:
+          rich.panel.Panel
+        """
+        if isinstance(result, AggregatedResult):
+            return self.print_aggregated_result(result)
+        elif isinstance(result, MultiResult):
+            return self.print_multi_result(result)
+        elif isinstance(result, Result):
+            return self.print_result(result)
+        return Panel(f"Unable to find printer function for {result}")
 
 
 def print_result(
