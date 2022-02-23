@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nornir-rich"
-version = "0.1.1"
+version = "0.1.2"
 description = "Collection of 'nice looking' functions with rich for nornir"
 authors = ["ubaumann <github@m.ubaumann.ch>"]
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ rich = "^11.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
-black = "^22"
+black = {extras = ["jupyter"], version = "^22.1.0"}
 mypy = "^0.931"
 ipykernel = "^6.9.1"
 

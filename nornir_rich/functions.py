@@ -81,7 +81,7 @@ class RichHelper:
           rich.panel.Panel
         """
         results: List[Union[Panel, None]] = [
-            self.print_result(r)
+            self.print_dispatch(r)
             for r in result
             if r.severity_level >= self.severity_level
         ]
@@ -119,13 +119,38 @@ class RichHelper:
 
     def print_scopes(self, scopes: Dict[str, Any]) -> Columns:
         if self.vars:
-            columns = [render_scope({k: v for k, v in map.items() if k in self.vars}, title=name) for name, map in scopes.items()]
+            columns = [
+                render_scope(
+                    {k: v for k, v in map.items() if k in self.vars}, title=name
+                )
+                for name, map in scopes.items()
+            ]
         else:
             columns = [render_scope(map, title=name) for name, map in scopes.items()]
         return Columns(
             columns,
             **self.columns_settings,
         )
+
+    def print_dispatch(
+        self, result: Union[Result, MultiResult, AggregatedResult]
+    ) -> Union[Panel, None]:
+        """
+        Dispatch print function
+
+        Arguments:
+          result: Individual Result, MultiResult or AggregatedResult to render
+
+        Return:
+          rich.panel.Panel
+        """
+        if isinstance(result, AggregatedResult):
+            return self.print_aggregated_result(result)
+        elif isinstance(result, MultiResult):
+            return self.print_multi_result(result)
+        elif isinstance(result, Result):
+            return self.print_result(result)
+        return Panel(f"Unable to find printer function for {result}")
 
 
 def print_result(

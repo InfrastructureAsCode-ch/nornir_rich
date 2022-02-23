@@ -69,3 +69,18 @@ print_result(results, vars=["diff", "result", "name", "exception", "severity_lev
 print_failed_hosts(results)
 
 print_inventory(nr)
+
+
+from time import sleep
+from nornir_rich.progress_bar import RichProgressBar
+
+
+def random_sleep(task: Task) -> Result:
+    delay = randrange(10)
+    sleep(delay)
+    return Result(host=task.host, result=f"{delay} seconds delay")
+
+
+nr.data.reset_failed_hosts()
+nr_with_processors = nr.with_processors([RichProgressBar()])
+result = nr_with_processors.run(task=random_sleep)
