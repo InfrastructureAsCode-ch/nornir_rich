@@ -41,7 +41,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.7', '3.8', '3.9', '3.10']
-        platform: [ubuntu-latest, macOS-10.15, windows-latest]
+        platform: [ubuntu-latest, macOS-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v2
@@ -68,8 +68,13 @@ jobs:
       - name: Install Dependencies
         run: poetry install --no-interaction --no-root
 
+      - name: Switch character encoding in Windows to UTF-8
+        run: chcp 65001
+        if: ${{ matrix.platform == 'windows-latest' }}
+
       - name: Run pytest
         run: make pytest
+
 
   release:
     name: Releasing to pypi
