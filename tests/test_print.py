@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Union
+from typing import Any, Union
 import pytest
 
 from rich.console import Console
@@ -217,3 +217,20 @@ def test_print_result_severity_level(host_one: Host) -> None:
     output = render(panel)
     expected = "╭──────────── HOST | Severity Level ─────────────╮\n│ ╭──────────╮                                   │\n│ │ Critical │                                   │\n│ ╰──────────╯                                   │\n╰────────────────────────────────────────────────╯\n"
     assert output == expected
+
+
+@pytest.mark.parametrize(
+    "result_data,expected",
+    [
+        ({"a": {"b": "c"}}, "'b':"),
+        (["test", 123], "test"),
+        (12345, "12345"),
+        ("text", "text"),
+    ],
+    ids=["dict", "list", "int", "str"],
+)
+def test_result_datatypes(host_one: Host, result_data: Any, expected: str) -> None:
+    result = Result(host=host_one, result=result_data)
+    panel = RichHelper().print_result(result)
+    output = render(panel)
+    assert expected in output
