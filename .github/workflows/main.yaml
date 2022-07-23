@@ -68,12 +68,15 @@ jobs:
       - name: Install Dependencies
         run: poetry install --no-interaction --no-root
 
-      - name: Switch character encoding in Windows to UTF-8
-        run: chcp 65001
+      - name: Force using UTF-8 encoding for windows tests
+        run: make pytest
         if: ${{ matrix.platform == 'windows-latest' }}
+        env:
+          PYTHONIOENCODING: utf-8
 
       - name: Run pytest
         run: make pytest
+        if: ${{ matrix.platform != 'windows-latest' }}
 
 
   release:
