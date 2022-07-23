@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nornir-rich"
-version = "0.1.2"
+version = "0.1.3"
 description = "Collection of 'nice looking' functions with rich for nornir"
 authors = ["ubaumann <github@m.ubaumann.ch>"]
 license = "Apache-2.0"
