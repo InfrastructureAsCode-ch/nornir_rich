@@ -1,6 +1,6 @@
 PROJECT=nornir_rich
 CODE_DIRS=${PROJECT} tests
-IMG_URL=https://raw.githubusercontent.com/InfrastructureAsCode-ch/nornir-rich/main/docs/imgs/
+IMG_URL=https://raw.githubusercontent.com/InfrastructureAsCode-ch/nornir_rich/main/docs/imgs/
 
 # Run pytest
 .PHONY: pytest
