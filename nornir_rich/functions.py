@@ -1,9 +1,10 @@
 import logging
 import threading
 from typing import Any, List, Union, Dict
+from rich.console import RenderableType
+
 from nornir.core import Nornir
 from nornir.core.inventory import Inventory
-
 from nornir.core.task import AggregatedResult, MultiResult, Result
 
 from rich import print
@@ -12,7 +13,7 @@ from rich.panel import Panel
 from rich.scope import render_scope
 from rich.padding import PaddingDimensions
 from rich.pretty import Pretty
-from rich.protocol import is_renderable
+from rich.protocol import is_renderable, rich_cast
 
 
 LOCK = threading.Lock()
@@ -113,10 +114,12 @@ class RichHelper:
                 title=result.name,
                 style="red" if result.failed else "green",
             )
+
+        result_data: RenderableType
         if not is_renderable(result.result):
             result_data = Pretty(result.result) if result.result is not None else ""
         else:
-            result_data = result.result
+            result_data = rich_cast(result.result)
         return Panel(
             result_data,
             title=result.name,

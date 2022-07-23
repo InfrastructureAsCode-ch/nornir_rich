@@ -53,15 +53,15 @@ result = nr_with_processors.run(task=random_sleep)
 
 ### Print Inventory
 
-![Print inventory](docs/print_inventory.png)
+![Print inventory](docs/imgs/print_inventory.png)
 
 ### Print Result
 
-![Print Result](docs/print_result.png)
+![Print Result](docs/imgs/print_result.png)
 
 ### Progress Bar
 
-![Progress Bar](docs/progressbar.png)
+![Progress Bar](docs/imgs/progressbar.png)
 
 
-More [examples](docs/print_functions.ipynb)
+More [examples](docs/imgs/print_functions.ipynb)
