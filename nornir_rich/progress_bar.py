@@ -54,7 +54,6 @@ class RichProgressBar:
         )
         self.exit_status_panel = Panel.fit(
             self.progress_status,
-            title="Task Exit Status",
             border_style="yellow",
             padding=(0, 2),
         )
