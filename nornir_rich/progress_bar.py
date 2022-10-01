@@ -45,22 +45,21 @@ class RichProgressBar:
         self.overall_progress_table = Table.grid()
         self.overall_progress_table.add_row(self.progress_total)
         self.progress_table = Table.grid()
-        self.progress_table.add_row(
-            Panel.fit(
-                self.overall_progress_table,
-                title="Overall Progress",
-                border_style="green",
-                padding=(0, 2),
-            )
+
+        self.overall_panel = Panel.fit(
+            self.overall_progress_table,
+            title="Overall Progress",
+            border_style="green",
+            padding=(0, 2),
         )
-        self.progress_table.add_row(
-            Panel.fit(
-                self.progress_status,
-                title="Task Exit Status",
-                border_style="yellow",
-                padding=(0, 2),
-            )
+        self.exit_status_panel = Panel.fit(
+            self.progress_status,
+            border_style="yellow",
+            padding=(0, 2),
         )
+
+        self.progress_table.add_row(self.overall_panel)
+        self.progress_table.add_row(self.exit_status_panel)
         self.progress_live = Live(self.progress_table, refresh_per_second=10)
 
     def task_started(self, task: Task) -> None:
@@ -73,6 +72,8 @@ class RichProgressBar:
         else:
             self.concurrent_count = workers
         self.total_hosts = hosts
+
+        self.exit_status_panel.title = task.name
 
         self.successful = self.progress_status.add_task(
             "[green]Successful:", total=self.total_hosts
