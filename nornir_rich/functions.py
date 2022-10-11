@@ -108,9 +108,15 @@ class RichHelper:
         """
         if result.severity_level < self.severity_level:
             return None
+        if "diff" in self.vars:
+            diff_split = result.diff.splitlines()
+            for idx, x in enumerate(diff_split):
+                setattr(result,"diff" + str(idx),x)
+                self.vars.append("diff" + str(idx))
+            self.vars.remove("diff")   
         if self.vars:
             return Panel(
-                render_scope({x: getattr(result, x) for x in self.vars}),
+                render_scope({x: getattr(result, x) for x in self.vars},sort_keys=False),
                 title=result.name,
                 style="red" if result.failed else "green",
             )
