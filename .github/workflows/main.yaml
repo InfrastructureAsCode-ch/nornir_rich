@@ -67,6 +67,12 @@ jobs:
 
       - name: Install Dependencies
         run: poetry install --no-interaction --no-root
+      
+      - name: Poetry show
+        run: poetry show
+      
+      - name: Poetry env info
+        run: poetry env info
 
       - name: Force using UTF-8 encoding for windows tests
         run: make pytest
