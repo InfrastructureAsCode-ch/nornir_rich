@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, List, Union, Dict
+from typing import Any, List, Union, Dict, Optional
 from rich.console import RenderableType
 
 from nornir.core import Nornir
@@ -36,12 +36,12 @@ class RichHelper:
     def __init__(
         self,
         columns_settings: Dict[str, Any] = dict(),
-        padding: PaddingDimensions = None,
+        padding: Optional[PaddingDimensions] = None,
         expand: bool = False,
         equal: bool = True,
-        vars: List[str] = None,
+        vars: Optional[List[str]] = None,
         severity_level: int = 0,
-        failed: bool = None,
+        failed: Optional[bool] = None,
     ) -> None:
         self.columns_settings = columns_settings
         self.columns_settings["expand"] = expand
@@ -164,11 +164,11 @@ class RichHelper:
 
 def print_result(
     result: Union[Result, MultiResult, AggregatedResult],
-    vars: List[str] = None,
+    vars: Optional[List[str]] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
     columns_settings: Dict[str, Any] = dict(),
-    padding: PaddingDimensions = None,
+    padding: Optional[PaddingDimensions] = None,
     expand: bool = False,
     equal: bool = True,
 ) -> None:
@@ -209,11 +209,11 @@ def print_result(
 
 def print_failed_hosts(
     result: AggregatedResult,
-    vars: List[str] = None,
+    vars: Optional[List[str]] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
     columns_settings: Dict[str, Any] = dict(),
-    padding: PaddingDimensions = None,
+    padding: Optional[PaddingDimensions] = None,
     expand: bool = False,
     equal: bool = True,
 ) -> None:
@@ -250,11 +250,11 @@ def print_failed_hosts(
 
 def print_inventory(
     inventory: Union[Inventory, Nornir],
-    vars: List[str] = None,
+    vars: Optional[List[str]] = None,
     failed: bool = False,
     severity_level: int = logging.INFO,
     columns_settings: Dict[str, Any] = dict(),
-    padding: PaddingDimensions = None,
+    padding: Optional[PaddingDimensions] = None,
     expand: bool = False,
     equal: bool = True,
 ) -> None:
