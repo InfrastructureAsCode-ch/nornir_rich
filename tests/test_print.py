@@ -30,6 +30,15 @@ def result_two(host_one: Host) -> Result:
 
 
 @pytest.fixture
+def result_three(host_one: Host) -> Result:
+    return Result(
+        host=host_one,
+        result="Demo result three\nHas a new line",
+        diff="changed 'two' to 'three'\n",
+    )
+
+
+@pytest.fixture
 def result_failed_one(host_one: Host) -> Result:
     return Result(host=host_one, result="Demo failed result", failed=True)
 
@@ -137,6 +146,34 @@ def test_print_result_one_vars(
     result_name: str, expected: str, request: pytest.FixtureRequest
 ) -> None:
     panel = RichHelper(vars=["result", "diff"]).print_result(
+        request.getfixturevalue(result_name)
+    )
+    output = render(panel)
+    assert output == expected
+
+
+@pytest.mark.parametrize(
+    "result_name,expected",
+    [
+        (
+            "result_one",
+            "╭────────────────────────────────────────────────╮\n│ ╭──────────────────────────╮                   │\n│ │   diff =                 │                   │\n│ │ result = Demo result one │                   │\n│ ╰──────────────────────────╯                   │\n╰────────────────────────────────────────────────╯\n",
+        ),
+        (
+            "result_two",
+            "╭────────────────────────────────────────────────╮\n│ ╭─────────────────────────────────╮            │\n│ │   diff = changed 'one' to 'two' │            │\n│ │ result = Demo result two        │            │\n│ ╰─────────────────────────────────╯            │\n╰────────────────────────────────────────────────╯\n",
+        ),
+        (
+            "result_three",
+            "╭────────────────────────────────────────────────╮\n│ ╭───────────────────────────────────╮          │\n│ │   diff = changed 'two' to 'three' │          │\n│ │ result = Demo result three        │          │\n│ │          Has a new line           │          │\n│ ╰───────────────────────────────────╯          │\n╰────────────────────────────────────────────────╯\n",
+        ),
+    ],
+    ids=["result_one", "result_two", "result_three"],
+)
+def test_print_result_vars_line_breaks(
+    result_name: str, expected: str, request: pytest.FixtureRequest
+) -> None:
+    panel = RichHelper(vars=["result", "diff"], line_breaks=True).print_result(
         request.getfixturevalue(result_name)
     )
     output = render(panel)
