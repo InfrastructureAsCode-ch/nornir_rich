@@ -66,6 +66,11 @@ results = nr.run(task=greet_and_count, number=10)
 
 print_result(results)
 print_result(results, vars=["diff", "result", "name", "exception", "severity_level"])
+print_result(
+    results,
+    vars=["diff", "result", "name", "exception", "severity_level"],
+    line_breaks=True,
+)
 print_failed_hosts(results)
 
 print_inventory(nr)
