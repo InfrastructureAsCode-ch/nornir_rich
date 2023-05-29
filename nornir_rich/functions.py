@@ -10,7 +10,6 @@ from nornir.core.task import AggregatedResult, MultiResult, Result
 from rich import print
 from rich.columns import Columns
 from rich.panel import Panel
-from rich.scope import render_scope
 from rich.padding import PaddingDimensions
 from rich.pretty import Pretty
 from rich.protocol import is_renderable, rich_cast
