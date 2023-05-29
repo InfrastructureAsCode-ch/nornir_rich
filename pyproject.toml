@@ -20,9 +20,9 @@ nornir = "^3"
 rich = "^12|^13"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.0"
-black = {extras = ["jupyter"], version = "^22.1.0"}
-mypy = "^0.991"
+pytest = "^7"
+black = {extras = ["jupyter"], version = "^23.3.0"}
+mypy = "^1"
 ipykernel = "^6"
 
 [build-system]
