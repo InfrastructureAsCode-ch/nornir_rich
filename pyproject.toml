@@ -15,7 +15,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 nornir = "^3"
 rich = "^12|^13"
 
@@ -31,7 +31,7 @@ build-backend = "poetry.masonry.api"
 
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.8"
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_untyped_calls = true
