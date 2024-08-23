@@ -7,9 +7,9 @@ jobs:
     name: linters
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -18,7 +18,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Cache Poetry virtualenv
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cached-poetry-dependencies
         with:
           path: .venv
@@ -40,13 +40,13 @@ jobs:
         shell: bash
     strategy:
       matrix:
-        python-version: [ '3.7', '3.8', '3.9', '3.10']
-        platform: [ubuntu-latest, macOS-latest, windows-latest]
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12' ]
+        platform: [ubuntu-latest, macos-13, windows-2019]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -57,7 +57,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Cache Poetry virtualenv
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cached-poetry-dependencies
         with:
           path: .venv
@@ -90,9 +90,9 @@ jobs:
     needs: [linters, pytest]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
       
