@@ -24,6 +24,7 @@ pytest = "^8"
 black = {extras = ["jupyter"], version = "^24"}
 mypy = "^1"
 ipykernel = "*"
+setuptools = {version = "*", python = ">=3.12"}
 
 [build-system]
 requires = ["poetry>=0.12"]
