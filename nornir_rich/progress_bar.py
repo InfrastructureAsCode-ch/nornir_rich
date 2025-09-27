@@ -103,21 +103,19 @@ class RichProgressBar:
             self.progress_running_tasks.update(self.running_concurrent_bar, advance=1)
 
     def task_instance_completed(
-        self, task: Task, host: Host, results: MultiResult
+        self, task: Task, host: Host, result: MultiResult
     ) -> None:
         with self.lock:
             self.progress_running_tasks.update(self.running_concurrent_bar, advance=-1)
             self.progress_total.update(self.total, advance=1)
             self.progress_status.update(
-                self.error if results.failed else self.successful, advance=1
+                self.error if result.failed else self.successful, advance=1
             )
-            if results.changed:
+            if result.changed:
                 self.progress_status.update(self.changed, advance=1)
 
-    def subtask_instance_started(self, task: Task, host: Host) -> None:
-        ...
+    def subtask_instance_started(self, task: Task, host: Host) -> None: ...
 
     def subtask_instance_completed(
         self, task: Task, host: Host, result: MultiResult
-    ) -> None:
-        ...
+    ) -> None: ...

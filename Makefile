@@ -5,7 +5,7 @@ IMG_URL=https://raw.githubusercontent.com/InfrastructureAsCode-ch/nornir_rich/ma
 # Run pytest
 .PHONY: pytest
 pytest:
-	poetry run pytest -vs ${ARGS}
+	poetry run pytest -vs tests
 
 # Check if the python code needs to be reformatted 
 .PHONY: black
