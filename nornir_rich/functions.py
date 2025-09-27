@@ -12,6 +12,7 @@ from rich.padding import PaddingDimensions
 from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.protocol import is_renderable, rich_cast
+from rich.scope import render_scope
 from rich.table import Table
 from rich.text import Text
 
