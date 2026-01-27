@@ -1,5 +1,7 @@
 import logging
 import threading
+from sys import breakpointhook
+from turtle import left
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from nornir.core import Nornir
@@ -32,6 +34,8 @@ class RichHelper:
       severity_level: Print only errors with this severity level or higher
       failed: if ``True`` assume the task failed
       line_breaks: if ``True`` line breaks in strings will be printed
+      empty_var: if ``True`` Null or empty vars will still be printed (default True)
+      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict key names replace var name (default False)
     """
 
     def __init__(
@@ -44,6 +48,8 @@ class RichHelper:
         severity_level: int = 0,
         failed: Optional[bool] = None,
         line_breaks: Optional[bool] = None,
+        empty_var: Optional[bool] = None,
+        per_panel_var: Optional[bool] = None,
     ) -> None:
         self.columns_settings = columns_settings
         self.columns_settings["expand"] = expand
@@ -54,6 +60,8 @@ class RichHelper:
         self.severity_level = severity_level
         self.failed = failed
         self.line_breaks = line_breaks
+        self.empty_var = empty_var
+        self.per_panel_var = per_panel_var
 
     def print_aggregated_result(self, result: AggregatedResult) -> Panel:
         """
@@ -100,33 +108,44 @@ class RichHelper:
         return panel
 
     @group()
-    def render_panelgroup(self, result: Result) -> Union[Panel, None]:
+    def render_panelgroup(self, result: Result) -> Panel:
         """
-        Render task result or if string make look like dict but keep string format
+        Render task result vars in separate panels
 
         Arguments:
           result: Individual result
-          host: Hostname
 
         Return:
-          rich.console.Group
+          rich.panel.Panel
         """
         for x in self.vars:
-            # Dont render strings (to honour /n) but prettify to make look like was rendered
+            # Dont render strings (to honour /n), however prettify to make look like it was rendered (good for raw cmd output)
             if isinstance(getattr(result, x, ""), str):
                 if len(getattr(result, x, "")) != 0:
-                    format_result = getattr(result, x).replace("\n", "\n         ")
-                    result_str = Text(f"{x} = " + format_result.lstrip())
-                    result_str.stylize("italic yellow", 0, len(x))
-                    result_str.stylize("red", len(x) + 1, len(x) + 2)
+                    # Stylise the the dictionary key name
+                    key_name = Text(f"{x} = ")
+                    key_name.stylize("italic yellow", 0, len(x))
+                    key_name.stylize("red", len(x) + 1, len(x) + 2)
+                    # Add the dictionary value, either non-rendered (line_breaks) or rendered
+                    if self.line_breaks:
+                        value_text = (
+                            getattr(result, x).replace("\n", "\n         ").lstrip()
+                        )
+                        items_panel = key_name + value_text
+                    else:
+                        items_panel = Table.grid(padding=(0, 1))
+                        items_panel.add_column(justify="right", no_wrap=True)
+                        items_panel.add_column(ratio=1)
+                        items_panel.add_row(key_name, Pretty(getattr(result, x)))
                     result_data = Panel.fit(
-                        result_str,
+                        items_panel,
                         border_style="scope.border",
                         padding=(0, 1),
                     )
                     yield result_data
-            # Render non-string objects, if dict render that rather than encasing in new dict (better for nornir validate)
-            elif getattr(result, x, None) != None:
+            # Render non-string objects
+            elif getattr(result, x, None) is not None:
+                # For dict render the keys rather than encasing in new parent dict
                 if isinstance(getattr(result, x), dict):
                     yield render_scope(getattr(result, x))
                 else:
@@ -146,16 +165,27 @@ class RichHelper:
             return None
 
         if self.vars:
-            # Stops empty panels from being printed
-            if result.result != None:
-                return Panel.fit(self.render_panelgroup(result), title=result.name)
+            # Dictates whether prints task if result empty (default True)
+            if self.empty_var or result.result is not None:
+                # All vars in 1 panel or per-panel vars (default False)
+                if self.per_panel_var:
+                    return Panel.fit(self.render_panelgroup(result), title=result.name)
+                else:
+                    return Panel(
+                        self._scope_talbe(
+                            scope={x: getattr(result, x) for x in self.vars}
+                        ),
+                        title=result.name,
+                        style="red" if result.failed else "green",
+                    )
 
         result_data: RenderableType
         if not is_renderable(result.result):
             result_data = Pretty(result.result) if result.result is not None else ""
         else:
             result_data = rich_cast(result.result)
-        if result.result != None:
+        # Dictates whether prints empty var from task result (default True)
+        if self.empty_var or result.result is not None:
             return Panel(
                 result_data,
                 title=result.name,
@@ -258,6 +288,8 @@ def print_result(
     expand: bool = False,
     equal: bool = True,
     line_breaks: bool = False,
+    empty_var: bool = True,
+    per_panel_var: bool = False,
 ) -> None:
     """
     Prints an object of type `nornir.core.task.Result` || `nornir.core.task.MultiResult` || `nornir.core.task.AggregatedResult`
@@ -272,6 +304,8 @@ def print_result(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
+      empty_var: if ``True`` Null or empty vars will still be printed (default True)
+      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict key names replace var name (default False)
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -284,6 +318,8 @@ def print_result(
         severity_level=severity_level,
         failed=failed,
         line_breaks=line_breaks,
+        empty_var=empty_var,
+        per_panel_var=per_panel_var,
     )
     try:
         if isinstance(result, AggregatedResult):
@@ -306,6 +342,8 @@ def print_failed_hosts(
     expand: bool = False,
     equal: bool = True,
     line_breaks: bool = False,
+    empty_var: bool = True,
+    per_panel_var: bool = False,
 ) -> None:
     """
     Prints results of all failed hosts from `nornir.core.task.AggregatedResult`
@@ -320,6 +358,8 @@ def print_failed_hosts(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
+      empty_var: if ``True`` Null or empty vars will still be printed (default True)
+      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict key names replace var name (default False)
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -332,6 +372,8 @@ def print_failed_hosts(
         severity_level=severity_level,
         failed=failed,
         line_breaks=line_breaks,
+        empty_var=empty_var,
+        per_panel_var=per_panel_var,
     )
     try:
         for host, multi_result in result.failed_hosts.items():

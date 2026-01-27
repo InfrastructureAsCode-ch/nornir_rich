@@ -1,23 +1,25 @@
 # nornir_rich
 
-## My branch (format_string_result)
+## My branch (per_panel_var)
 
-If more than the one *Result* variable (*print_result(results, vars=["diff", "result", etc])*) is passed into ***print_result*** it renders (with *render_scope*) it as a dictionary resulting in the printed string output losing its formatting (new lines not honoured). This is only the case for multiple variables, if just use *print_result(results)* it doesnt render it so you dont have the problem.
+Adds a few extra options to the *print_result* method:
 
-As I am screen scraping command outputs and in some situations use multiple variables I have added a new *render_panelgroup* method to make the string look like it is a dictionary (using *rich.text*) grouping the different result variables under the one panel using [panel groups through the Rich group() decorator](https://rich.readthedocs.io/en/stable/group.html).
+- *empty_var* (default True): Do not print any empty *result vars*, it also doesn't print the task if *result* is empty
+- *per_panel_var* (default False): Puts each *result var* in its own *rich panel*, if the var is a dictionary rather than having result as the key uses key for each dictionary item (all displayed in the one panel)
 
-As this changes nornir_rich operation in way the output is displayed and is more custom to what I want to achieve didnt think was worth putting in as a pull request.
+```python
+print_result(
+    results,
+    vars=["name", "result"],
+    empty_var=False,
+    per_panel_var=True,
+)
+```
 
 To install this branch:
 
 ```bash
-pip install git+https://github.com/sjhloco/nornir_rich@format_string_result
-```
-
-To reference in a requirement file:
-
-```bash
-nornir-rich @ git+https://github.com/sjhloco/nornir_rich@849923339ac0ade999059b7cd2a28890dfcaf4b2
+pip install git+https://github.com/sjhloco/nornir_rich@per_panel_var
 ```
 
 ## Install
