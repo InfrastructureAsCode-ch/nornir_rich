@@ -34,8 +34,8 @@ class RichHelper:
       severity_level: Print only errors with this severity level or higher
       failed: if ``True`` assume the task failed
       line_breaks: if ``True`` line breaks in strings will be printed
-      empty_var: if ``True`` Null or empty vars will still be printed (default True)
-      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict key names replace var name (default False)
+      print_empty_task: if ``False`` will not print task if the task result is Null or "" (default True)
+      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict uses key names for panel titles (default False)
     """
 
     def __init__(
@@ -48,7 +48,7 @@ class RichHelper:
         severity_level: int = 0,
         failed: Optional[bool] = None,
         line_breaks: Optional[bool] = None,
-        empty_var: Optional[bool] = None,
+        print_empty_task: Optional[bool] = None,
         per_panel_var: Optional[bool] = None,
     ) -> None:
         self.columns_settings = columns_settings
@@ -60,7 +60,7 @@ class RichHelper:
         self.severity_level = severity_level
         self.failed = failed
         self.line_breaks = line_breaks
-        self.empty_var = empty_var
+        self.print_empty_task = print_empty_task
         self.per_panel_var = per_panel_var
 
     def print_aggregated_result(self, result: AggregatedResult) -> Panel:
@@ -107,69 +107,25 @@ class RichHelper:
         )
         return panel
 
-    @group()
-    def render_panelgroup(self, result: Result) -> Panel:
-        """
-        Render task result vars in separate panels
-
-        Arguments:
-          result: Individual result
-
-        Return:
-          rich.panel.Panel
-        """
-        for x in self.vars:
-            # Dont render strings (to honour /n), however prettify to make look like it was rendered (good for raw cmd output)
-            if isinstance(getattr(result, x, ""), str):
-                if len(getattr(result, x, "")) != 0:
-                    # Stylise the the dictionary key name
-                    key_name = Text(f"{x} = ")
-                    key_name.stylize("italic yellow", 0, len(x))
-                    key_name.stylize("red", len(x) + 1, len(x) + 2)
-                    # Add the dictionary value, either non-rendered (line_breaks) or rendered
-                    if self.line_breaks:
-                        value_text = (
-                            getattr(result, x).replace("\n", "\n         ").lstrip()
-                        )
-                        items_panel = key_name + value_text
-                    else:
-                        items_panel = Table.grid(padding=(0, 1))
-                        items_panel.add_column(justify="right", no_wrap=True)
-                        items_panel.add_column(ratio=1)
-                        items_panel.add_row(key_name, Pretty(getattr(result, x)))
-                    result_data = Panel.fit(
-                        items_panel,
-                        border_style="scope.border",
-                        padding=(0, 1),
-                    )
-                    yield result_data
-            # Render non-string objects
-            elif getattr(result, x, None) is not None:
-                # For dict render the keys rather than encasing in new parent dict
-                if isinstance(getattr(result, x), dict):
-                    yield render_scope(getattr(result, x))
-                else:
-                    yield render_scope({x: getattr(result, x)})
-
     def print_result(self, result: Result) -> Union[Panel, None]:
         """
-        Print individual task result
+        Render individual task result
 
         Arguments:
-          result: Individual result to be passed to be rendered
+          result: Individual result to render
 
         Return:
           rich.panel.Panel
         """
         if result.severity_level < self.severity_level:
             return None
-
+        # Triggered by print_result(results, vars["x", "y"])
         if self.vars:
-            # Dictates whether prints task if result empty (default True)
-            if self.empty_var or result.result is not None:
-                # All vars in 1 panel or per-panel vars (default False)
+            # Dictates whether to print task if result is "" or None (default True)
+            if not (self.print_empty_task is False and result.result in ("", None)):
+                # Display all vars in 1 panel (default) or have a panel for each var
                 if self.per_panel_var:
-                    return Panel.fit(self.render_panelgroup(result), title=result.name)
+                    return Panel.fit(self._scope_panelgroup(result), title=result.name)
                 else:
                     return Panel(
                         self._scope_talbe(
@@ -178,14 +134,14 @@ class RichHelper:
                         title=result.name,
                         style="red" if result.failed else "green",
                     )
-
+        # Triggered by print_result(results)
         result_data: RenderableType
         if not is_renderable(result.result):
             result_data = Pretty(result.result) if result.result is not None else ""
         else:
             result_data = rich_cast(result.result)
-        # Dictates whether prints empty var from task result (default True)
-        if self.empty_var or result.result is not None:
+        # Dictates whether to print task if result is "" or None (default True)
+        if not (self.print_empty_task is False and result.result in ("", None)):
             return Panel(
                 result_data,
                 title=result.name,
@@ -277,6 +233,50 @@ class RichHelper:
             padding=(0, 1),
         )
 
+    @group()
+    def _scope_panelgroup(self, result: Result) -> Panel:
+        """
+        Render the task result vars in separate panels (ignores vars with "" or None)
+
+        Arguments:
+          result: Individual result
+
+        Return:
+          rich.panel.Panel
+        """
+        for x in self.vars:
+            # Whether to render string or not (line_breaks), non-rendered honours /n (good for raw cmd output)
+            if isinstance(getattr(result, x, ""), str):
+                if len(getattr(result, x, "")) != 0:
+                    # Stylise the the dictionary key name
+                    key_name = Text(f"{x} = ")
+                    key_name.stylize("italic yellow", 0, len(x))
+                    key_name.stylize("red", len(x) + 1, len(x) + 2)
+                    # Add the dictionary value, either non-rendered (line_breaks) or rendered
+                    if self.line_breaks:
+                        value_text = (
+                            getattr(result, x).replace("\n", "\n         ").lstrip()
+                        )
+                        items_panel = key_name + value_text
+                    else:
+                        items_panel = Table.grid(padding=(0, 1))
+                        items_panel.add_column(justify="right", no_wrap=True)
+                        items_panel.add_column(ratio=1)
+                        items_panel.add_row(key_name, Pretty(getattr(result, x)))
+                    result_data = Panel.fit(
+                        items_panel,
+                        border_style="scope.border",
+                        padding=(0, 1),
+                    )
+                    yield result_data
+            # Render non-string objects
+            elif getattr(result, x, None) is not None:
+                # If is a dict the key names become the panel titles rather than the var name
+                if isinstance(getattr(result, x), dict):
+                    yield render_scope(getattr(result, x))
+                else:
+                    yield render_scope({x: getattr(result, x)})
+
 
 def print_result(
     result: Union[Result, MultiResult, AggregatedResult],
@@ -288,7 +288,7 @@ def print_result(
     expand: bool = False,
     equal: bool = True,
     line_breaks: bool = False,
-    empty_var: bool = True,
+    print_empty_task: bool = True,
     per_panel_var: bool = False,
 ) -> None:
     """
@@ -304,8 +304,8 @@ def print_result(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
-      empty_var: if ``True`` Null or empty vars will still be printed (default True)
-      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict key names replace var name (default False)
+      print_empty_task: if ``False`` will not print task if the task result is Null or "" (default True)
+      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict uses key names for panel titles (default False)
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -318,7 +318,7 @@ def print_result(
         severity_level=severity_level,
         failed=failed,
         line_breaks=line_breaks,
-        empty_var=empty_var,
+        print_empty_task=print_empty_task,
         per_panel_var=per_panel_var,
     )
     try:
@@ -342,7 +342,7 @@ def print_failed_hosts(
     expand: bool = False,
     equal: bool = True,
     line_breaks: bool = False,
-    empty_var: bool = True,
+    print_empty_task: bool = True,
     per_panel_var: bool = False,
 ) -> None:
     """
@@ -358,8 +358,8 @@ def print_failed_hosts(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
-      empty_var: if ``True`` Null or empty vars will still be printed (default True)
-      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict key names replace var name (default False)
+      print_empty_task: if ``False`` will not print task if the task result is Null or "" (default True)
+      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict uses key names for panel titles (default False)
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -372,7 +372,7 @@ def print_failed_hosts(
         severity_level=severity_level,
         failed=failed,
         line_breaks=line_breaks,
-        empty_var=empty_var,
+        print_empty_task=print_empty_task,
         per_panel_var=per_panel_var,
     )
     try:
