@@ -1,22 +1,22 @@
 import logging
 import threading
-from sys import breakpointhook
-from turtle import left
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Union, Dict, Tuple, Optional
+from rich.console import RenderableType, ConsoleRenderable, group
 
 from nornir.core import Nornir
 from nornir.core.inventory import Inventory
 from nornir.core.task import AggregatedResult, MultiResult, Result
+
 from rich import print
 from rich.columns import Columns
-from rich.console import ConsoleRenderable, RenderableType, group
-from rich.padding import PaddingDimensions
 from rich.panel import Panel
+from rich.padding import PaddingDimensions
 from rich.pretty import Pretty
 from rich.protocol import is_renderable, rich_cast
 from rich.scope import render_scope
 from rich.table import Table
 from rich.text import Text
+
 
 LOCK = threading.Lock()
 
@@ -34,8 +34,8 @@ class RichHelper:
       severity_level: Print only errors with this severity level or higher
       failed: if ``True`` assume the task failed
       line_breaks: if ``True`` line breaks in strings will be printed
-      print_empty_task: if ``False`` will not print task if the task result is Null or "" (default True)
-      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict uses key names for panel titles (default False)
+      print_empty_task: if ``False`` dont print task if result is Null or ""
+      per_panel_var: if ``True`` print vars in own panel with dict key as titles
     """
 
     def __init__(
@@ -304,8 +304,8 @@ def print_result(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
-      print_empty_task: if ``False`` will not print task if the task result is Null or "" (default True)
-      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict uses key names for panel titles (default False)
+      print_empty_task: if ``False`` dont print task if result is Null or ""
+      per_panel_var: if ``True`` print vars in own panel with dict key as titles
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -358,8 +358,8 @@ def print_failed_hosts(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
-      print_empty_task: if ``False`` will not print task if the task result is Null or "" (default True)
-      per_panel_var: if ``True`` prints vars in own independent panel, if var is a dict uses key names for panel titles (default False)
+      print_empty_task: if ``False`` dont print task if result is Null or ""
+      per_panel_var: if ``True`` print vars in own panel with dict key as titles
     """
     LOCK.acquire()
     equal = False if expand else equal

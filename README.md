@@ -1,29 +1,5 @@
 # nornir_rich
 
-## My branch (per_panel_var)
-
-Adds a few extra options to the *print_result* method:
-
-- *print_empty_task* (default True): If set to *False* will not print a task if the task *result* is *Null* or an empty string (*""*)
-- *per_panel_var* (default False): If set to *True* puts each *result var* in its own *rich panel*. If the var is a dictionary rather than having var name as the panel title uses key for each dictionary item (all displayed in the one panel)
-
-```python
-print_result(
-    results,
-    vars=["name", "result"],
-    print_empty_task=False,
-    per_panel_var=True,
-)
-```
-
-<img width="1491" height="743" alt="Image" src="https://github.com/user-attachments/assets/08cfb946-479f-464e-81a8-45b4efb2a5b2" />
-
-To install this branch:
-
-```bash
-pip install git+https://github.com/sjhloco/nornir_rich@per_panel_var
-```
-
 ## Install
 
 ```bash
