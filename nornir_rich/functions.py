@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, List, Union, Dict, Tuple, Optional
+from typing import Any, List, Union, Dict, Tuple, Optional, Generator
 from rich.console import RenderableType, ConsoleRenderable, group
 
 from nornir.core import Nornir
@@ -119,34 +119,30 @@ class RichHelper:
         """
         if result.severity_level < self.severity_level:
             return None
+        # Dictates whether to print task if result is "" or None (default True)
+        if self.print_empty_task is False and result.result in ("", None):
+            return None
         # Triggered by print_result(results, vars["x", "y"])
         if self.vars:
-            # Dictates whether to print task if result is "" or None (default True)
-            if not (self.print_empty_task is False and result.result in ("", None)):
-                # Display all vars in 1 panel (default) or have a panel for each var
-                if self.per_panel_var:
-                    return Panel.fit(self._scope_panelgroup(result), title=result.name)
-                else:
-                    return Panel(
-                        self._scope_talbe(
-                            scope={x: getattr(result, x) for x in self.vars}
-                        ),
-                        title=result.name,
-                        style="red" if result.failed else "green",
-                    )
+            # Display all vars in 1 panel (default) or have a panel for each var
+            if self.per_panel_var:
+                return Panel.fit(self._scope_panelgroup(result), title=result.name)
+            return Panel(
+                self._scope_talbe(scope={x: getattr(result, x) for x in self.vars}),
+                title=result.name,
+                style="red" if result.failed else "green",
+            )
         # Triggered by print_result(results)
         result_data: RenderableType
         if not is_renderable(result.result):
             result_data = Pretty(result.result) if result.result is not None else ""
         else:
             result_data = rich_cast(result.result)
-        # Dictates whether to print task if result is "" or None (default True)
-        if not (self.print_empty_task is False and result.result in ("", None)):
-            return Panel(
-                result_data,
-                title=result.name,
-                style="red" if result.failed else "green",
-            )
+        return Panel(
+            result_data,
+            title=result.name,
+            style="red" if result.failed else "green",
+        )
 
     def print_scopes(self, scopes: Dict[str, Any]) -> Columns:
         if self.vars:
@@ -234,7 +230,9 @@ class RichHelper:
         )
 
     @group()
-    def _scope_panelgroup(self, result: Result) -> Panel:
+    def _scope_panelgroup(
+        self, result: Result
+    ) -> Generator[ConsoleRenderable, None, None]:
         """
         Render the task result vars in separate panels (ignores vars with "" or None)
 
@@ -242,12 +240,13 @@ class RichHelper:
           result: Individual result
 
         Return:
-          rich.panel.Panel
+          rich.console.ConsoleRenderable
         """
-        for x in self.vars:
+        for x in self.vars if self.vars else []:
             # Whether to render string or not (line_breaks), non-rendered honours /n (good for raw cmd output)
-            if isinstance(getattr(result, x, ""), str):
-                if len(getattr(result, x, "")) != 0:
+            value = getattr(result, x, "")
+            if isinstance(value, str):
+                if len(value) != 0:
                     # Stylise the the dictionary key name
                     key_name = Text(f"{x} = ")
                     key_name.stylize("italic yellow", 0, len(x))
