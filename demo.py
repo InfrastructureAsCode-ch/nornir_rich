@@ -37,6 +37,10 @@ def count(task: Task, number: int) -> Result:
     return Result(host=task.host, result=f"{[n for n in range(0, number)]}")
 
 
+def print_input(task: Task, my_input: str) -> Result:
+    return Result(host=task.host, result=my_input)
+
+
 def greet_and_count(task: Task, number: int) -> Result:
     task.run(
         name="Greeting is the polite thing to do",
@@ -58,6 +62,19 @@ def greet_and_count(task: Task, number: int) -> Result:
     return Result(host=task.host, result=f"{task.host} counted {even_or_odds} times!")
 
 
+def per_panal_vars(task: Task) -> None:
+    task.run(
+        name="Example of nested_data host_var being prettified per dict key",
+        task=print_input,
+        my_input=task.host.get("nested_data", ""),
+    )
+    task.run(
+        name="Example of ignored empty task",
+        task=print_input,
+        my_input="",
+    )
+
+
 results = nr.run(task=hello_world)
 
 print_result(results, expand=True)
@@ -72,6 +89,16 @@ print_result(
     line_breaks=True,
 )
 print_failed_hosts(results)
+
+# Examples using print_empty_task and per_panel_var print_result flags
+results = nr.run(task=per_panal_vars)
+print_result(
+    results,
+    vars=["diff", "result", "name", "exception", "severity_level"],
+    line_breaks=True,
+    print_empty_task=False,
+    per_panel_var=True,
+)
 
 print_inventory(nr)
 
