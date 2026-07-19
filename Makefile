@@ -25,8 +25,8 @@ tests: pytest black mypy
 .PHONY: bump
 bump:
 	uv version --bump ${ARGS}
-	sed -i -E "s|\"\b[0-9]+.\b[0-9]+.\b[0-9]+\"  # From Makefile|\"`poetry version -s`\"  # From Makefile|g" ${PROJECT}/__init__.py
-	sed -i -E "s|\"\b[0-9]+.\b[0-9]+.\b[0-9]+\"  # From Makefile|\"`poetry version -s`\"  # From Makefile|g" tests/test_${PROJECT}.py
+	sed -i -E "s|\"\b[0-9]+.\b[0-9]+.\b[0-9]+\"  # From Makefile|\"`uv version --short`\"  # From Makefile|g" ${PROJECT}/__init__.py
+	sed -i -E "s|\"\b[0-9]+.\b[0-9]+.\b[0-9]+\"  # From Makefile|\"`uv version --short`\"  # From Makefile|g" tests/test_${PROJECT}.py
 
 # Used in the pipeline to change the image urls befor publishing it on pypi.org
 .PHONY: fiximageurls
@@ -38,6 +38,6 @@ fiximageurls:
 tag:
 	git checkout main
 	git pull
-	git tag -a "v`uv version --short`" -m "Version v`poetry version -s`"
+	git tag -a "v`uv version --short`" -m "Version v`uv version --short`"
 	git push --tags
 	git checkout -
