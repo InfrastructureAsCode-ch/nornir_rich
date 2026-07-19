@@ -1,7 +1,7 @@
 import logging
 import threading
-from typing import Any, List, Union, Dict, Tuple, Optional
-from rich.console import RenderableType, ConsoleRenderable
+from typing import Any, List, Union, Dict, Tuple, Optional, Generator
+from rich.console import RenderableType, ConsoleRenderable, group
 
 from nornir.core import Nornir
 from nornir.core.inventory import Inventory
@@ -13,9 +13,9 @@ from rich.panel import Panel
 from rich.padding import PaddingDimensions
 from rich.pretty import Pretty
 from rich.protocol import is_renderable, rich_cast
+from rich.scope import render_scope
 from rich.table import Table
 from rich.text import Text
-
 
 LOCK = threading.Lock()
 
@@ -33,6 +33,8 @@ class RichHelper:
       severity_level: Print only errors with this severity level or higher
       failed: if ``True`` assume the task failed
       line_breaks: if ``True`` line breaks in strings will be printed
+      print_empty_task: if ``False`` dont print task if result is Null or ""
+      per_panel_var: if ``True`` print vars in own panel with dict key as titles
     """
 
     def __init__(
@@ -45,6 +47,8 @@ class RichHelper:
         severity_level: int = 0,
         failed: Optional[bool] = None,
         line_breaks: Optional[bool] = None,
+        print_empty_task: Optional[bool] = None,
+        per_panel_var: Optional[bool] = None,
     ) -> None:
         self.columns_settings = columns_settings
         self.columns_settings["expand"] = expand
@@ -55,6 +59,8 @@ class RichHelper:
         self.severity_level = severity_level
         self.failed = failed
         self.line_breaks = line_breaks
+        self.print_empty_task = print_empty_task
+        self.per_panel_var = per_panel_var
 
     def print_aggregated_result(self, result: AggregatedResult) -> Panel:
         """
@@ -112,13 +118,20 @@ class RichHelper:
         """
         if result.severity_level < self.severity_level:
             return None
+        # Dictates whether to print task if result is "" or None (default True)
+        if self.print_empty_task is False and result.result in ("", None):
+            return None
+        # Triggered by print_result(results, vars["x", "y"])
         if self.vars:
+            # Display all vars in 1 panel (default) or have a panel for each var
+            if self.per_panel_var:
+                return Panel.fit(self._scope_panelgroup(result), title=result.name)
             return Panel(
                 self._scope_talbe(scope={x: getattr(result, x) for x in self.vars}),
                 title=result.name,
                 style="red" if result.failed else "green",
             )
-
+        # Triggered by print_result(results)
         result_data: RenderableType
         if not is_renderable(result.result):
             result_data = Pretty(result.result) if result.result is not None else ""
@@ -215,6 +228,53 @@ class RichHelper:
             padding=(0, 1),
         )
 
+    @group()
+    def _scope_panelgroup(
+        self, result: Result
+    ) -> Generator[ConsoleRenderable, None, None]:
+        """
+        Render the task result vars in separate panels (ignores vars with "" or None)
+
+        Arguments:
+          result: Individual result
+
+        Return:
+          rich.console.ConsoleRenderable
+        """
+        for x in self.vars if self.vars else []:
+            # Whether to render string or not (line_breaks), non-rendered honours /n (good for raw cmd output)
+            value = getattr(result, x, "")
+            if isinstance(value, str):
+                if len(value) != 0:
+                    # Stylise the the dictionary key name
+                    key_name = Text(f"{x} = ")
+                    key_name.stylize("italic yellow", 0, len(x))
+                    key_name.stylize("red", len(x) + 1, len(x) + 2)
+                    # Add the dictionary value, either non-rendered (line_breaks) or rendered
+                    if self.line_breaks:
+                        value_text = (
+                            getattr(result, x).replace("\n", "\n         ").lstrip()
+                        )
+                        items_panel = key_name + value_text
+                    else:
+                        items_panel = Table.grid(padding=(0, 1))
+                        items_panel.add_column(justify="right", no_wrap=True)
+                        items_panel.add_column(ratio=1)
+                        items_panel.add_row(key_name, Pretty(getattr(result, x)))
+                    result_data = Panel.fit(
+                        items_panel,
+                        border_style="scope.border",
+                        padding=(0, 1),
+                    )
+                    yield result_data
+            # Render non-string objects
+            elif getattr(result, x, None) is not None:
+                # If is a dict the key names become the panel titles rather than the var name
+                if isinstance(getattr(result, x), dict):
+                    yield render_scope(getattr(result, x))
+                else:
+                    yield render_scope({x: getattr(result, x)})
+
 
 def print_result(
     result: Union[Result, MultiResult, AggregatedResult],
@@ -226,6 +286,8 @@ def print_result(
     expand: bool = False,
     equal: bool = True,
     line_breaks: bool = False,
+    print_empty_task: bool = True,
+    per_panel_var: bool = False,
 ) -> None:
     """
     Prints an object of type `nornir.core.task.Result` || `nornir.core.task.MultiResult` || `nornir.core.task.AggregatedResult`
@@ -240,6 +302,8 @@ def print_result(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
+      print_empty_task: if ``False`` dont print task if result is Null or ""
+      per_panel_var: if ``True`` print vars in own panel with dict key as titles
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -252,6 +316,8 @@ def print_result(
         severity_level=severity_level,
         failed=failed,
         line_breaks=line_breaks,
+        print_empty_task=print_empty_task,
+        per_panel_var=per_panel_var,
     )
     try:
         if isinstance(result, AggregatedResult):
@@ -274,6 +340,8 @@ def print_failed_hosts(
     expand: bool = False,
     equal: bool = True,
     line_breaks: bool = False,
+    print_empty_task: bool = True,
+    per_panel_var: bool = False,
 ) -> None:
     """
     Prints results of all failed hosts from `nornir.core.task.AggregatedResult`
@@ -288,6 +356,8 @@ def print_failed_hosts(
       expand: Expand columns to full width. Defaults to False.
       equal: Equal sized columns. Defaults to False
       line_breaks: if ``True`` line breaks in strings will be printed
+      print_empty_task: if ``False`` dont print task if result is Null or ""
+      per_panel_var: if ``True`` print vars in own panel with dict key as titles
     """
     LOCK.acquire()
     equal = False if expand else equal
@@ -300,6 +370,8 @@ def print_failed_hosts(
         severity_level=severity_level,
         failed=failed,
         line_breaks=line_breaks,
+        print_empty_task=print_empty_task,
+        per_panel_var=per_panel_var,
     )
     try:
         for host, multi_result in result.failed_hosts.items():
