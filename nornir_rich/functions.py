@@ -17,7 +17,6 @@ from rich.scope import render_scope
 from rich.table import Table
 from rich.text import Text
 
-
 LOCK = threading.Lock()
 
 

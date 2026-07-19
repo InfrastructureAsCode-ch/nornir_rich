@@ -5,28 +5,22 @@ on: [push,pull_request]
 jobs:
   linters:
     name: linters
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v4
-        id: cached-poetry-dependencies
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Install Dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
       - name: Run black
         run: make black
@@ -39,49 +33,35 @@ jobs:
       run:
         shell: bash
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12' ]
-        platform: [ubuntu-latest, macos-13, windows-2019]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        platform:
+          - ubuntu-latest
+          - macos-15
+          - windows-2022
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v4
-        id: cached-poetry-dependencies
-        with:
-          path: .venv
-          key: venv-${{ matrix.python-version }}-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-        if: ${{ matrix.platform != 'windows-2019' }}  # windows hangs if using a cached venv
-
-      - name: Install Dependencies
-        run: poetry install --no-interaction --no-root
-      
-      - name: Poetry show
-        run: poetry show
-      
-      - name: Poetry env info
-        run: poetry env info
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
       - name: Force using UTF-8 encoding for windows tests
-        run: poetry run python -m pytest -vs
-        if: ${{ matrix.platform == 'windows-2019' }}
+        run: uv run pytest -vs
+        if: ${{ matrix.platform == 'windows-2022' }}
         env:
           PYTHONIOENCODING: utf-8
 
       - name: Run pytest
-        run: make pytest
-        if: ${{ matrix.platform != 'windows-2019' }}
+        run: uv run pytest -vs
+        if: ${{ matrix.platform != 'windows-2022' }}
 
 
   release:
@@ -90,28 +70,27 @@ jobs:
     needs: [linters, pytest]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: 3.8
-      
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+          enable-cache: true
+          python-version: "3.13"
 
       - name: prepare release
         run: make fiximageurls
 
       - name: build release
-        run: poetry build
+        run: uv build
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-      
-      - uses: actions/upload-artifact@v3
+
+      - uses: actions/upload-artifact@v4
         with:
           name: build
           path: dist/*
